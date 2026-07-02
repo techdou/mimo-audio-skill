@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MiMo Lecture Audio Segments",
+  "description": "Batch input schema for MiMo-V2.5-TTS lecture narration.",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "segments"
+      ],
+      "properties": {
+        "segments": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/segment"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/segment"
+      }
+    }
+  ],
+  "$defs": {
+    "segment": {
+      "type": "object",
+      "required": [
+        "index",
+        "title",
+        "filename",
+        "speech_text"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "filename": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9._-]+\\.wav$",
+          "description": "Output filename. Always use .wav; format=pcm16 means stream chunk format, and the script writes those chunks into a WAV container."
+        },
+        "model": {
+          "type": "string",
+          "default": "mimo-v2.5-tts",
+          "enum": [
+            "mimo-v2.5-tts",
+            "mimo-v2.5-tts-voicedesign",
+            "mimo-v2.5-tts-voiceclone"
+          ]
+        },
+        "voice": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Preset voice for mimo-v2.5-tts, or data URI for voiceclone. Omit for voicedesign."
+        },
+        "voice_sample_path": {
+          "type": "string",
+          "description": "Optional local .mp3/.wav voice sample path for voiceclone; script converts it to data URL."
+        },
+        "voice_design_prompt": {
+          "type": "string",
+          "description": "1-4 sentence voice identity prompt for mimo-v2.5-tts-voicedesign."
+        },
+        "format": {
+          "type": "string",
+          "default": "wav",
+          "enum": [
+            "wav",
+            "pcm16"
+          ],
+          "description": "API audio format. Use wav for normal batch synthesis; use pcm16 only with stream=true. Output file is still .wav."
+        },
+        "stream": {
+          "type": "boolean",
+          "description": "If true, use stream=true and format=pcm16; script writes a WAV container from PCM16 chunks."
+        },
+        "style_instruction": {
+          "type": "string",
+          "description": "Natural-language delivery instruction placed in user.content."
+        },
+        "speech_prefix_tags": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ],
+          "description": "Optional audio/style tags inserted at the beginning of assistant.content, e.g. ['温柔','平静']."
+        },
+        "speech_text": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Exact text to synthesize, placed in assistant.content."
+        },
+        "audio": {
+          "type": "object",
+          "description": "Optional raw audio object override for advanced users."
+        },
+        "optimize_text_preview": {
+          "type": "boolean",
+          "description": "Convenience field for voicedesign; copied into audio.optimize_text_preview when absent."
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

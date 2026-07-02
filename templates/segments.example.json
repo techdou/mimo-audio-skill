@@ -1,0 +1,35 @@
+{
+  "segments": [
+    {
+      "index": 1,
+      "title": "课程导入",
+      "filename": "01_intro.wav",
+      "model": "mimo-v2.5-tts",
+      "voice": "冰糖",
+      "format": "wav",
+      "style_instruction": "用温柔、清晰、适合课程讲解的语气朗读，语速中等偏慢，声音自然亲切。",
+      "speech_text": "同学们好，今天我们来一起学习人工智能工具的基本使用方法。我们不会一开始就背概念，而是先从实际任务出发，看看人工智能怎样帮助我们完成资料整理、内容生成和学习辅助。"
+    },
+    {
+      "index": 2,
+      "title": "知识博主音色示例",
+      "filename": "02_voice_design.wav",
+      "model": "mimo-v2.5-tts-voicedesign",
+      "format": "wav",
+      "voice_design_prompt": "一位年轻男性知识博主，声音清亮、亲切、有耐心，适合给小白讲解人工智能知识。",
+      "style_instruction": "语速中等，重点概念处适当停顿，不要新闻播音腔。",
+      "speech_text": "大模型并不是简单地查答案。它更像是一个读过大量资料的助手，会结合上下文，生成当前最合适的回答。理解这一点，有助于我们更好地设计提示词。"
+    },
+    {
+      "index": 3,
+      "title": "音频标签控制示例",
+      "filename": "03_style_tags.wav",
+      "model": "mimo-v2.5-tts",
+      "voice": "茉莉",
+      "format": "wav",
+      "speech_prefix_tags": ["温柔", "平静"],
+      "style_instruction": "像课堂助教一样耐心讲解，遇到定义时略微放慢。",
+      "speech_text": "Token 可以理解为模型处理文本时使用的基本单位。它不完全等同于一个汉字或一个英文单词，而是模型内部切分和计算文本的方式。"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# Runtime uses Python standard library only.
+# Python 3.10+ recommended.
+
+# Optional, if you want external JSON Schema validation in your own workflow:
+# jsonschema>=4.0.0
