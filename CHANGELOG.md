@@ -1,5 +1,34 @@
 # Changelog
 
+## v1.4.0
+
+自更新增强版:新增运行时官方文档同步校验,防止模型下线后 skill 静默失效。
+
+### Added
+
+- 新增 `scripts/check_official_docs.py`:核心校验器,双层检测——
+  - API 层:`GET /v1/models` 探测 skill 依赖的 4 个模型是否仍存在(CRITICAL)。
+  - 文档层:通过 `llms.txt` → `.md` 纯文本源,提取音色/语言/格式,与 `templates/known_rules.json` 做 diff(WARNING / INFO)。
+  - 支持 `--format json/text`、`--force-refresh`、`--fail-on critical/warning/info`、`--no-models`。
+  - 提供 `run_check()` 公共入口供 TTS / ASR / pipeline 预检查调用。
+- 新增 `templates/known_rules.json`:本地规则快照,作为 diff 基准。
+- 新增 `docs/self_update.md`:自更新机制设计文档。
+- `mimo_audio_common.py` 新增三个基础函数:`fetch_text(url)`、`list_models(api_key, base_url)`、`DocCache` 文件缓存类。
+- `mimo_tts_batch.py` / `mimo_asr_transcribe.py` 预检查阶段接入 doc check;新增 `--check-docs`(阻断)和 `--skip-check`(跳过)参数。
+- `run_pipeline.py` 新增 `--check-docs` / `--skip-check`,校验结果透传给子脚本。
+- `config.example.json` 新增 `doc_check_enabled` / `doc_check_ttl_hours` / `known_rules_path` / `official_doc_urls` 字段。
+
+### Changed
+
+- `docs/mimo_v25_audio_rules.md` 对齐官方文档(2026-07-15 快照),补齐 6 处差距:ASR 方言支持、`optimize_text_preview`、唱歌模式标签、音频标签控制、导演模式、voiceclone 风格指令。头部加官方文档 URL 和 snapshot_date。
+- `SKILL.md` 版本升至 1.4.0,加 Self-update guard 说明和 check_official_docs.py 路由。
+
+### Design
+
+- 保持 stdlib-only:`.md` 源中的 HTML 表格用已知音色名正则匹配,不引入 beautifulsoup4。
+- 默认非阻断:缓存未过期时零网络开销静默通过;过期时后台刷新不阻断当前运行。
+- doc check 失败只降级为 advisory,绝不阻断合成流程(除非显式 `--check-docs`)。
+
 ## v1.3.0
 
 模块化增强版，遵循渐进式披露设计。

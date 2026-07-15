@@ -1,0 +1,38 @@
+{
+  "_doc": "Local snapshot of MiMo official API rules. Used by check_official_docs.py as the diff baseline. Update this when the official docs change and you have verified the new rules.",
+  "source_urls": {
+    "llms_txt": "https://mimo.mi.com/llms.txt",
+    "tts_md": "https://mimo.mi.com/static/docs/quick-start/usage-guide/audio/speech-synthesis-v2.5.md",
+    "asr_md": "https://mimo.mi.com/static/docs/quick-start/usage-guide/audio/Speech-Recognition.md",
+    "tts_human": "https://mimo.mi.com/docs/zh-CN/quick-start/usage-guide/audio/speech-synthesis-v2.5",
+    "asr_human": "https://mimo.mi.com/docs/zh-CN/quick-start/usage-guide/audio/Speech-Recognition"
+  },
+  "tts": {
+    "models": [
+      "mimo-v2.5-tts",
+      "mimo-v2.5-tts-voicedesign",
+      "mimo-v2.5-tts-voiceclone"
+    ],
+    "preset_voices": [
+      "mimo_default",
+      "冰糖",
+      "茉莉",
+      "苏打",
+      "白桦",
+      "Mia",
+      "Chloe",
+      "Milo",
+      "Dean"
+    ],
+    "formats": ["wav", "pcm16"],
+    "voice_sample_formats": [".mp3", ".wav"],
+    "voice_sample_max_base64_bytes": 10485760
+  },
+  "asr": {
+    "models": ["mimo-v2.5-asr"],
+    "languages": ["auto", "zh", "en"],
+    "input_formats": [".wav", ".mp3"],
+    "input_max_base64_bytes": 10485760
+  },
+  "snapshot_date": "2026-07-15"
+}

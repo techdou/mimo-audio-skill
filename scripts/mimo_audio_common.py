@@ -6,6 +6,7 @@ Standard-library only helpers for OpenAI-compatible MiMo /chat/completions calls
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import mimetypes
 import os
@@ -273,3 +274,81 @@ def with_retries(callable_obj, *, retries: int, sleep_cap: float = 30.0, verbose
             time.sleep(sleep_seconds)
     assert last_exc is not None
     raise last_exc
+
+
+# ---------------------------------------------------------------------------
+# Self-update helpers: fetch official docs, probe /v1/models, cache results.
+# Used by check_official_docs.py and the TTS/ASR pre-flight hooks.
+# ---------------------------------------------------------------------------
+
+DEFAULT_MODELS_PATH = "/models"
+DEFAULT_DOC_CACHE_DIR = "output/.doc_cache"
+
+
+def fetch_text(url: str, timeout: int = 30) -> str:
+    """Fetch a URL and return its body as text. Raises RuntimeError on failure."""
+    req = urllib.request.Request(url=url, method="GET", headers={"User-Agent": "mimo-skill-selfcheck/1.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")[:500]
+        raise MiMoHTTPError(exc.code, body, parse_retry_after(exc.headers.get("Retry-After"))) from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"network error fetching {url}: {exc}") from exc
+
+
+def list_models(api_key: str, base_url: str, auth_mode: str = "api-key", timeout: int = 30) -> List[str]:
+    """GET /v1/models and return a list of model IDs. Raises on auth or network failure."""
+    url = base_url.rstrip("/") + DEFAULT_MODELS_PATH
+    req = urllib.request.Request(
+        url=url,
+        method="GET",
+        headers={
+            "User-Agent": "mimo-skill-selfcheck/1.0",
+            **build_auth_headers(api_key, auth_mode),
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")[:500]
+        raise MiMoHTTPError(exc.code, body, parse_retry_after(exc.headers.get("Retry-After"))) from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"network error listing models: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"/v1/models response is not valid JSON: {exc}") from exc
+    # OpenAI-style: {"data": [{"id": "..."}, ...]}
+    if isinstance(data, dict) and isinstance(data.get("data"), list):
+        ids: List[str] = []
+        for item in data["data"]:
+            if isinstance(item, dict) and isinstance(item.get("id"), str):
+                ids.append(item["id"])
+        return ids
+    raise ValueError(f"/v1/models returned unexpected structure: {str(data)[:200]}")
+
+
+class DocCache:
+    """File-based cache for fetched doc text. Keyed by URL hash."""
+
+    def __init__(self, cache_dir: str = DEFAULT_DOC_CACHE_DIR):
+        self.dir = Path(cache_dir)
+
+    def _path_for(self, url: str) -> Path:
+        h = hashlib.sha256(url.encode("utf-8")).hexdigest()[:16]
+        return self.dir / f"{h}.txt"
+
+    def get(self, url: str, ttl_hours: float = 24.0) -> Optional[str]:
+        """Return cached content if it exists and is younger than ttl_hours."""
+        p = self._path_for(url)
+        if not p.exists():
+            return None
+        age = time.time() - p.stat().st_mtime
+        if age > ttl_hours * 3600:
+            return None
+        return p.read_text(encoding="utf-8")
+
+    def set(self, url: str, content: str) -> None:
+        self.dir.mkdir(parents=True, exist_ok=True)
+        self._path_for(url).write_text(content, encoding="utf-8")

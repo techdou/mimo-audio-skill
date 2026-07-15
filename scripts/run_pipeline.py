@@ -71,6 +71,8 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     parser.add_argument("--sleep-between", type=float, help="Pass rate-limit sleep between MiMo API calls")
     parser.add_argument("--log-file", help="Human-readable log file")
     parser.add_argument("--jsonl-log", help="JSONL pipeline log")
+    parser.add_argument("--check-docs", action="store_true", help="Run official-doc sync check before pipeline (blocking on CRITICAL/WARNING)")
+    parser.add_argument("--skip-check", action="store_true", help="Skip the official-doc pre-flight check entirely")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args(argv)
 
@@ -107,6 +109,25 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     if rc:
         return rc
 
+    # --- Official-doc sync check at pipeline level ---
+    config_data = {}
+    config_file = Path(args.config)
+    if config_file.exists():
+        config_data = json.loads(config_file.read_text(encoding="utf-8"))
+    doc_check_enabled = bool(config_data.get("doc_check_enabled", True))
+    if doc_check_enabled and not args.skip_check:
+        check_cmd = [sys.executable, str(SCRIPT_DIR / "check_official_docs.py"), "--config", args.config, "--format", "text"]
+        if args.check_docs:
+            check_cmd += ["--fail-on", "warning"]
+        else:
+            check_cmd += ["--fail-on", "critical"]
+        rc = run_cmd(check_cmd, dry_run=args.dry_run, logger=logger, jsonl=jsonl)
+        if rc and args.check_docs:
+            logger.error("Official-doc check failed; aborting pipeline. Use --skip-check to override.")
+            return rc
+        elif rc:
+            logger.info("Official-doc check reported issues (non-blocking); continuing pipeline.")
+
     if args.tts:
         cmd = [sys.executable, str(SCRIPT_DIR / "mimo_tts_batch.py"), "--config", args.config, "--segments", str(segments_path), "--out-dir", str(audio_dir), "--manifest", str(tts_manifest), "--include-text-in-manifest"]
         if args.stream:
@@ -115,6 +136,10 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
             cmd.append("--stream-all")
         if args.overwrite:
             cmd.append("--overwrite")
+        if args.check_docs:
+            cmd.append("--check-docs")
+        if args.skip_check:
+            cmd.append("--skip-check")
         if args.sleep_between is not None:
             cmd += ["--sleep-between", str(args.sleep_between)]
         rc = run_cmd(cmd, dry_run=args.dry_run, logger=logger, jsonl=jsonl)
@@ -140,6 +165,10 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
             logger.error("No audio files found for --asr-check")
             return 1
         cmd = [sys.executable, str(SCRIPT_DIR / "mimo_asr_transcribe.py"), "--config", args.config, "--audio", *audio_files, "--language", args.asr_language, "--out-dir", str(asr_dir), "--manifest", str(asr_manifest), "--overwrite"]
+        if args.check_docs:
+            cmd.append("--check-docs")
+        if args.skip_check:
+            cmd.append("--skip-check")
         rc = run_cmd(cmd, dry_run=args.dry_run, logger=logger, jsonl=jsonl)
         if rc:
             return rc

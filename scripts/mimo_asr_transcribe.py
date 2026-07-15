@@ -114,6 +114,38 @@ def transcribe_files(args: argparse.Namespace) -> int:
     if not args.dry_run and not api_key:
         raise RuntimeError("MIMO_API_KEY is required unless --dry-run is used")
 
+    # --- Official-doc sync check (self-update guard) ---
+    doc_check_enabled = bool(config.get("doc_check_enabled", True))
+    if doc_check_enabled and not getattr(args, "skip_check", False):
+        try:
+            import check_official_docs as _cod
+            issues, _extracted, _models = _cod.run_check(config, args, api_key_override=api_key, base_url_override=base_url)
+            critical = [i for i in issues if i["severity"] == _cod.CRITICAL]
+            warnings = [i for i in issues if i["severity"] == _cod.WARNING]
+            if critical:
+                print(f"[DOC-CHECK] {len(critical)} CRITICAL issue(s) detected:")
+                for i in critical:
+                    print(f"  [CRITICAL] ({i['section']}) {i['message']}")
+                if getattr(args, "check_docs", False):
+                    raise RuntimeError(
+                        "Official-doc check found CRITICAL issues (model may be deprecated). "
+                        "Use --skip-check to override at your own risk."
+                    )
+                else:
+                    print("[DOC-CHECK] Running in non-blocking mode; continuing despite CRITICAL issues. Use --check-docs to enforce.")
+            elif warnings and getattr(args, "check_docs", False):
+                print(f"[DOC-CHECK] {len(warnings)} WARNING(s):")
+                for i in warnings:
+                    print(f"  [WARNING] ({i['section']}) {i['message']}")
+                raise RuntimeError("Official-doc check found warnings and --check-docs is enabled.")
+            elif warnings:
+                print(f"[DOC-CHECK] {len(warnings)} WARNING(s) (non-blocking). Run check_official_docs.py for details.")
+        except RuntimeError:
+            raise
+        except Exception as exc:
+            if getattr(args, "verbose", False):
+                print(f"[DOC-CHECK] Skipped due to error: {exc}")
+
     audio_files = [Path(p) for p in args.audio]
     if not audio_files:
         raise ValueError("provide at least one --audio path")
@@ -220,6 +252,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--overwrite", action="store_true")
     p.add_argument("--save-raw-response", action="store_true")
     p.add_argument("--stop-on-error", action="store_true")
+    p.add_argument("--check-docs", action="store_true", help="Run official-doc sync check before transcription (blocking)")
+    p.add_argument("--skip-check", action="store_true", help="Skip the official-doc pre-flight check entirely")
     p.add_argument("--verbose", action="store_true")
     return p
 

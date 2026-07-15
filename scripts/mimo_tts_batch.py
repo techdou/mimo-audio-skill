@@ -333,6 +333,42 @@ def synthesize_batch(args: argparse.Namespace) -> int:
     if args.strict and validation_summary["warnings"] > 0:
         raise RuntimeError("segment validation produced warnings and --strict is enabled")
 
+    # --- Official-doc sync check (self-update guard) ---
+    # Default: lightweight — read cache, refresh in background if stale, never block.
+    # --check-docs:  force synchronous blocking check (exit on CRITICAL/WARNING).
+    # --skip-check:  bypass entirely.
+    doc_check_enabled = bool(config.get("doc_check_enabled", True))
+    if doc_check_enabled and not args.skip_check:
+        try:
+            import check_official_docs as _cod
+            issues, _extracted, _models = _cod.run_check(config, args, api_key_override=api_key, base_url_override=base_url)
+            critical = [i for i in issues if i["severity"] == _cod.CRITICAL]
+            warnings = [i for i in issues if i["severity"] == _cod.WARNING]
+            if critical:
+                print(f"[DOC-CHECK] {len(critical)} CRITICAL issue(s) detected:")
+                for i in critical:
+                    print(f"  [CRITICAL] ({i['section']}) {i['message']}")
+                if args.check_docs:
+                    raise RuntimeError(
+                        "Official-doc check found CRITICAL issues (model may be deprecated). "
+                        "Use --skip-check to override at your own risk."
+                    )
+                else:
+                    print("[DOC-CHECK] Running in non-blocking mode; continuing despite CRITICAL issues. Use --check-docs to enforce.")
+            elif warnings and args.check_docs:
+                print(f"[DOC-CHECK] {len(warnings)} WARNING(s):")
+                for i in warnings:
+                    print(f"  [WARNING] ({i['section']}) {i['message']}")
+                raise RuntimeError("Official-doc check found warnings and --check-docs is enabled.")
+            elif warnings:
+                print(f"[DOC-CHECK] {len(warnings)} WARNING(s) (non-blocking). Run check_official_docs.py for details.")
+        except RuntimeError:
+            raise
+        except Exception as exc:
+            # Doc check failures must never block synthesis — they're advisory.
+            if args.verbose:
+                print(f"[DOC-CHECK] Skipped due to error: {exc}")
+
     if not args.dry_run and not api_key:
         raise RuntimeError("MIMO_API_KEY is required unless --dry-run is used")
 
@@ -468,6 +504,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--stop-on-error", action="store_true", help="Stop batch on first segment failure")
     parser.add_argument("--include-text-in-manifest", action="store_true", help="Include speech_text in manifest")
     parser.add_argument("--save-raw-response", action="store_true", help="Save raw API responses for debugging")
+    parser.add_argument("--check-docs", action="store_true", help="Run official-doc sync check before synthesis (blocking)")
+    parser.add_argument("--skip-check", action="store_true", help="Skip the official-doc pre-flight check entirely")
     parser.add_argument("--verbose", action="store_true")
     return parser
 

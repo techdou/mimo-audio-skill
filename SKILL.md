@@ -1,7 +1,7 @@
 ---
 name: mimo-lecture-audio-skill
-version: 1.3.0
-description: Generate MiMo-powered lecture narration audio from teaching notes, with optional ASR QA, subtitles, HTML review pages, WAV merge, duration stats, and packaging. Use progressive disclosure: route to the smallest script needed for the user's task.
+version: 1.4.0
+description: Generate MiMo-powered lecture narration audio from teaching notes, with optional ASR QA, subtitles, HTML review pages, WAV merge, duration stats, packaging, and runtime official-doc sync checking. Use progressive disclosure: route to the smallest script needed for the user's task.
 ---
 
 # MiMo Lecture Audio Skill
@@ -19,6 +19,7 @@ Do not run the full pipeline by default. Choose the smallest script that satisfi
 - Add audio controls to an existing lecture HTML: use `scripts/inject_audio_to_html.py`.
 - Merge segment WAV files: use `scripts/merge_wav.py`.
 - Measure audio durations: use `scripts/audio_duration.py`.
+- Check whether local rules match official MiMo docs and `/v1/models`: use `scripts/check_official_docs.py`.
 - Run a common multi-step workflow: use `scripts/run_pipeline.py` with explicit flags.
 
 ## Core workflow
@@ -39,6 +40,15 @@ Do not run the full pipeline by default. Choose the smallest script that satisfi
 - Use `mimo-v2.5-tts-voiceclone` with `voice_sample_path` or `data:audio/...;base64,...`.
 - Use `--stream` only for preset TTS by default. Use `--stream-all` only when compatibility streaming is explicitly desired.
 - ASR uses `mimo-v2.5-asr` and `input_audio.data` data URLs.
+
+## Self-update guard
+
+This skill checks itself against official MiMo docs before synthesis. Two complementary layers:
+
+- **API layer**: `GET /v1/models` — verifies the 4 models this skill uses are still listed. Catches deprecations (the V2 series was retired 2026.6.30).
+- **Doc layer**: fetches `llms.txt` → `.md` sources and diffs preset voices / languages / formats against `templates/known_rules.json`.
+
+Behavior: default non-blocking (read cache → warn → continue). Use `--check-docs` to make it blocking. Use `--skip-check` to bypass. See `docs/self_update.md` for details.
 
 ## Default commands
 
@@ -95,4 +105,5 @@ Load deeper docs only when needed:
 - `docs/html_player.md`
 - `docs/pipeline.md`
 - `docs/mimo_v25_audio_rules.md`
+- `docs/self_update.md`
 - `docs/troubleshooting.md`
