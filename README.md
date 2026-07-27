@@ -1,3 +1,26 @@
+# MiMo Lecture Audio Skill | MiMo 讲义语音 Skill
+
+[English](#english) | [中文](#中文)
+
+---
+
+<a id="english"></a>
+## English
+
+A modular Agent Skill that converts lecture notes, scripts, or course materials into **MiMo voice broadcast audio**. v1.3.0 design: TTS is the core capability; HTML player pages, SRT/VTT subtitles, ASR quality check, audio merging, duration stats, and ZIP packaging are all optional capabilities.
+
+### When to use
+
+- Convert lecture notes / scripts / course materials to speech audio
+- Generate HTML audio player pages with subtitles
+- ASR-based audio quality verification
+- Batch audio merging and packaging
+
+---
+
+<a id="中文"></a>
+## 中文
+
 # MiMo Lecture Audio Skill v1.3.0
 
 把讲义、文稿或课程脚本转成 MiMo 语音播报音频。v1.3.0 采用模块化设计：TTS 是核心能力，HTML 播放页、SRT/VTT 字幕、ASR 质检、音频合并、时长统计和 ZIP 打包都是可选能力。

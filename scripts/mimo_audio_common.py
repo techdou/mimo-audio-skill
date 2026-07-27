@@ -16,6 +16,17 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional
 
+# ── .env fallback: load skill-local .env so the key survives PC switches ──
+# shell-exported vars still win (override=False); dotenv missing → silent skip.
+try:
+    from dotenv import load_dotenv as _load_dotenv
+    _skill_root = Path(__file__).resolve().parent.parent
+    _env_path = _skill_root / ".env"
+    if _env_path.is_file():
+        _load_dotenv(_env_path, override=False)
+except ImportError:
+    pass
+
 DEFAULT_BASE_URL = "https://api.xiaomimimo.com/v1"
 DEFAULT_ENDPOINT_PATH = "/chat/completions"
 AUDIO_SAMPLE_MAX_BASE64_BYTES = 10 * 1024 * 1024
@@ -352,3 +363,88 @@ class DocCache:
     def set(self, url: str, content: str) -> None:
         self.dir.mkdir(parents=True, exist_ok=True)
         self._path_for(url).write_text(content, encoding="utf-8")
+
+
+
+def _clean_enabled() -> bool:
+    """Read MIMO_AUDIO_CLEAN_INTERMEDIATES env var as a boolean."""
+    raw = os.getenv("MIMO_AUDIO_CLEAN_INTERMEDIATES", "").strip().lower()
+    return raw in {"1", "true", "yes", "on"}
+
+
+def cleanup_intermediates(root: Path, logger: Optional[Any] = None) -> List[str]:
+    """Remove non-final intermediate files from a mimo pipeline output directory.
+
+    Triggered by env var MIMO_AUDIO_CLEAN_INTERMEDIATES=1/true/yes/on.
+
+    Deletes (豆哥确认的中间产物清单):
+      - work/                 (cleaned.txt + segments.json)
+      - duration_manifest.json
+      - asr_manifest.json
+      - merge_manifest.json
+      - *.jsonl               (pipeline event log)
+      - <log-file>            (human-readable log, passed explicitly if used)
+
+    Preserves (豆哥明确要保留的最终交付):
+      - audio/*.wav, audio_manifest.json   (TTS 输出 + 主交付 manifest)
+      - full_course.wav                     (--merge 最终音频)
+      - player.html                         (--html-player 播放入口)
+      - subtitles/*.srt, subtitles/*.vtt    (字幕)
+      - asr/*.txt                           (ASR 转写文本)
+      - <stem>_with_audio.html              (--inject-html 交付)
+      - *.zip                               (--zip 在 root 外,本来就不被扫到)
+
+    Returns the list of removed relative paths for logging.
+    Best-effort: OSError on individual files is swallowed.
+    """
+    if not _clean_enabled():
+        return []
+    root = Path(root)
+    if not root.is_dir():
+        return []
+
+    intermediate_files = {"duration_manifest.json", "asr_manifest.json", "merge_manifest.json"}
+    removed: List[str] = []
+
+    # 1. 整个 work/ 子目录(cleaned.txt + segments.json)
+    work_dir = root / "work"
+    if work_dir.is_dir():
+        for child in work_dir.rglob("*"):
+            if child.is_file():
+                try:
+                    child.unlink()
+                    removed.append(str(child.relative_to(root)))
+                except OSError:
+                    pass
+        try:
+            # 删空目录(rglob 自底向上需要倒序)
+            for sub in sorted([p for p in work_dir.rglob("*") if p.is_dir()], reverse=True):
+                sub.rmdir()
+            work_dir.rmdir()
+            removed.append("work/")
+        except OSError:
+            pass
+
+    # 2. root 顶层的中间 manifest 文件
+    for name in intermediate_files:
+        p = root / name
+        if p.is_file():
+            try:
+                p.unlink()
+                removed.append(name)
+            except OSError:
+                pass
+
+    # 3. *.jsonl 日志(root 下任意位置)
+    for p in root.rglob("*.jsonl"):
+        if p.is_file():
+            try:
+                p.unlink()
+                removed.append(str(p.relative_to(root)))
+            except OSError:
+                pass
+
+    if logger is not None and removed:
+        logger.info(f"Cleaned intermediate files: {', '.join(removed)}")
+
+    return removed

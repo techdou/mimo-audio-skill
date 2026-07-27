@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Iterable, List, Optional
 
 from mimo_logger import JsonlLogger, setup_logger
+from mimo_audio_common import cleanup_intermediates
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 
@@ -219,6 +220,14 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
             logger.info(f"ZIP written: {zip_path}")
 
     logger.info(f"Pipeline complete: {root}")
+
+    # 中间产物清理(豆哥主场景: 任务做完后只保留最终交付,删 work/、内部 manifest、jsonl 日志)
+    # 由环境变量 MIMO_AUDIO_CLEAN_INTERMEDIATES=1 触发, 默认关闭(向后兼容)
+    if not args.dry_run:
+        removed = cleanup_intermediates(root, logger=logger)
+        if removed:
+            logger.info(f"Intermediate cleanup removed {len(removed)} item(s)")
+
     return 0
 
 

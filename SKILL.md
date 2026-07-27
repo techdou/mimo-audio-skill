@@ -95,6 +95,18 @@ python scripts/run_pipeline.py \
 
 For TTS tasks, return links or paths to generated audio files and `audio_manifest.json`. For optional add-ons, return only the requested artifacts, such as `player.html`, `course.srt`, `course.vtt`, `full_course.wav`, or the ZIP package.
 
+## Intermediate cleanup (optional)
+
+The pipeline leaves several internal state files that most users do not need after a successful run: `work/` (cleaned text + segments), `duration_manifest.json`, `asr_manifest.json`, `merge_manifest.json`, and `*.jsonl` logs.
+
+Set the env var to auto-clean these after success:
+
+```bash
+export MIMO_AUDIO_CLEAN_INTERMEDIATES=1
+```
+
+When enabled, the pipeline deletes only the items above. It preserves all final deliverables: `audio/*.wav`, `audio_manifest.json`, `full_course.wav`, `player.html`, `subtitles/*.srt`, `subtitles/*.vtt`, `asr/*.txt`, `<stem>_with_audio.html`, and `*.zip`. Failed runs are never cleaned (so you can debug). To make this permanent on Windows, set it as a user environment variable.
+
 ## Details
 
 Load deeper docs only when needed:
