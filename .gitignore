@@ -12,8 +12,7 @@ input/private/
 # ===== 个人数据与本地路径：不纳入版本控制 =====
 profiles/
 
-# ===== 内部文档与开发状态：不纳入版本控制 =====
-references/
+# ===== 内部开发文档（docs，如 PRD/PDD）与开发状态：不纳入版本控制 =====
 docs/
 output/
 work/

@@ -47,7 +47,7 @@ python scripts/mimo_tts_batch.py \
 ### Security
 
 - API keys are injected via environment variables only; `.env` and all key files are gitignored.
-- Personal voice profiles (`profiles/`), internal docs (`references/`), and generated output (`output/`, `work/`) are kept out of version control.
+- Personal voice profiles (`profiles/`), internal development docs (`docs/`, e.g. PRD/PDD), and generated output (`output/`, `work/`) are kept out of version control. `references/` is the skill's required documentation and IS part of the repository.
 
 See the Chinese section below for the full directory structure, pipeline examples, and testing instructions.
 
@@ -57,6 +57,8 @@ See the Chinese section below for the full directory structure, pipeline example
 ## 中文
 
 **mimo-audio-skill** 是通用 MiMo TTS 口播/有声内容合成技能：把任意文本合成为中文语音，覆盖课程讲义、小说有声书、播客、短视频口播、营销文案等场景。支持预置音色、voicedesign 音色设计、voiceclone 音色克隆，以及可复用的个性化音色风格模板（profile）。
+
+技能运行骨架完整入库：`SKILL.md`、`scripts/`、`templates/`、`references/`（必要说明文档）、`examples/`、`tests/` 全部纳入版本控制；仅内部开发文档（`docs/`，如 PRD/PDD）和本地生成产物不入库。
 
 ### 特性
 
@@ -79,11 +81,12 @@ mimo-audio-skill/
 ├── requirements.txt
 ├── scripts/              # 可执行脚本（TTS / ASR / 字幕 / 模板管理 / 调度器）
 ├── templates/            # 配置文件与内置音色模板（templates/profiles/）
+├── references/           # 技能必要说明文档（渐进式披露，按需加载）
 ├── examples/             # 示例输入（课程 / 小说 / 播客）
 └── tests/                # 标准库 unittest 测试
 ```
 
-以下目录仅保留在本地，不纳入版本控制：`profiles/`（个人音色模板）、`references/`（内部文档）、`output/`（生成产物）、`work/`（中间状态）。
+以下目录仅保留在本地，不纳入版本控制：`profiles/`（个人音色模板）、`docs/`（内部开发文档）、`output/`（生成产物）、`work/`（中间状态）。
 
 ### 环境要求
 
@@ -192,7 +195,7 @@ python -m unittest discover -s tests -v
 
 - API Key 只通过环境变量注入；`.env` 及所有密钥类文件已 gitignore，绝不提交。
 - 个人音色模板（`profiles/`）含本地路径等个人信息，不纳入版本控制。
-- 内部文档（`references/`）与生成产物（`output/`、`work/`）不纳入版本控制，避免内部文档和开发状态泄漏。
+- 内部开发文档（`docs/`，如 PRD/PDD）与生成产物（`output/`、`work/`）不纳入版本控制，避免内部文档和开发状态泄漏；`references/` 是技能运行必需的说明文档，正常入库。
 
 ### License
 

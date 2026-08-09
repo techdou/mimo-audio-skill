@@ -1,6 +1,6 @@
 [project]
 name = "mimo-audio-skill"
-version = "2.2.0"
+version = "2.3.0"
 description = "General-purpose MiMo TTS narration skill: lecture, novel, podcast and short-video audio with reusable voice/style profiles, ASR QA, subtitles, HTML review, WAV merge, and packaging."
 requires-python = ">=3.9"
 readme = "README.md"

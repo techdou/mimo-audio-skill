@@ -1,5 +1,16 @@
 # Changelog
 
+## v2.3.0
+
+技能骨架恢复入库：`references/` 从 .gitignore 移除并纳入版本控制；仓库卫生原则在全局 AGENTS 中澄清。
+
+### Changed
+
+- `.gitignore` 不再排除 `references/`：它是技能运行必需的说明文档，必须随技能仓库提交。
+- `.gitignore` 仅保留 `docs/` 排除：内部开发文档（PRD/PDD 等）不入库。
+- `AGENTS.override.md` 新增"仓库与技能发布卫生"章节，明确区分"内部开发文档不入库"与"技能运行骨架必须入库"。
+- README 同步更新目录结构与安全说明。
+
 ## v2.2.0
 
 Skills 格式合规升级：按官方 SKILL.md 规范（name/description frontmatter + 正文指令）重写元数据与正文，优化 Agent 匹配调用。
