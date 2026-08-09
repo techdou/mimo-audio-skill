@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Batch synthesize lecture narration segments with MiMo-V2.5-TTS.
+"""Batch synthesize narration segments with MiMo-V2.5-TTS.
 
 Supports:
 - preset TTS: mimo-v2.5-tts
 - text voice design: mimo-v2.5-tts-voicedesign
 - voice clone with data URI or local .mp3/.wav sample: mimo-v2.5-tts-voiceclone
+- reusable voice/style profiles (--profile / --profile-file)
 - non-stream WAV output
 - low-latency-compatible streaming PCM16 output converted to WAV
 """
@@ -299,6 +300,11 @@ def synthesize_batch(args: argparse.Namespace) -> int:
     auth_mode = str(args.auth_mode or config.get("auth_mode") or "api-key")
 
     segments = load_segments(segments_path)
+    if args.profile or args.profile_file:
+        from voice_profiles import apply_profile, find_profile
+        profile = find_profile(args.profile, args.profile_file)
+        apply_profile(profile, segments)
+        print(f"[PROFILE] applied '{profile.get('name', '?')}' to {len(segments)} segment(s)")
     if args.failed_only:
         segments = filter_failed_only(segments, manifest_path, default_format)
         print(f"[INFO] --failed-only selected {len(segments)} segment(s)")
@@ -477,9 +483,11 @@ def synthesize_batch(args: argparse.Namespace) -> int:
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Batch synthesize lecture segments with MiMo-V2.5-TTS")
+    parser = argparse.ArgumentParser(description="Batch synthesize narration segments with MiMo-V2.5-TTS")
     parser.add_argument("--segments", required=True, help="Path to segments JSON")
     parser.add_argument("--config", help="Optional config JSON")
+    parser.add_argument("--profile", help="Voice/style profile name (personal or built-in); fills missing segment fields")
+    parser.add_argument("--profile-file", help="Voice/style profile JSON file path")
     parser.add_argument("--out-dir", help="Output audio directory")
     parser.add_argument("--manifest", help="Manifest output path")
     parser.add_argument("--raw-dir", help="Raw response output directory")

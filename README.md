@@ -1,4 +1,4 @@
-# MiMo Lecture Audio Skill | MiMo 讲义语音 Skill
+# mimo-audio-skill | MiMo 语音合成技能
 
 [English](#english) | [中文](#中文)
 
@@ -7,77 +7,115 @@
 <a id="english"></a>
 ## English
 
-A modular Agent Skill that converts lecture notes, scripts, or course materials into **MiMo voice broadcast audio**. v1.3.0 design: TTS is the core capability; HTML player pages, SRT/VTT subtitles, ASR quality check, audio merging, duration stats, and ZIP packaging are all optional capabilities.
+**mimo-audio-skill** is a general-purpose MiMo TTS agent skill that turns any text into Chinese speech: lecture/course audio, audiobook narration, podcasts, short-video voiceovers, and marketing copy. It supports preset voices, voice design (`voicedesign`), voice cloning (`voiceclone`), and reusable personalized voice/style profiles. The `SKILL.md` uses standard YAML frontmatter (`name`/`description`) so agents can discover and trigger it implicitly.
 
-### When to use
+### Features
 
-- Convert lecture notes / scripts / course materials to speech audio
-- Generate HTML audio player pages with subtitles
-- ASR-based audio quality verification
-- Batch audio merging and packaging
+- Three TTS routes: preset voice (`mimo-v2.5-tts`), text-described voice design (`mimo-v2.5-tts-voicedesign`), and sample-based voice cloning (`mimo-v2.5-tts-voiceclone`).
+- Voice/style profiles: package model + voice + delivery style into one JSON and reuse it with `--profile`.
+- Generic text intake: auto-clean and segment `.md/.txt/.html/.docx`, with `--text-kind` shortcuts for lecture/novel/podcast/marketing.
+- Optional add-ons: ASR QA, SRT/VTT subtitles, HTML review player, WAV merge, duration stats, ZIP packaging.
+- Official-doc self check before synthesis (models vs `/v1/models`).
+
+### Quick start
+
+```bash
+export MIMO_API_KEY="your_sk_key"        # never commit this
+python scripts/voice_profiles.py list    # list built-in + personal voice profiles
+
+python scripts/mimo_tts_batch.py \
+  --config templates/config.example.json \
+  --segments examples/segments.sample.json \
+  --out-dir output/audio \
+  --manifest output/audio_manifest.json \
+  --include-text-in-manifest
+```
+
+Clone your own voice:
+
+```bash
+python scripts/voice_profiles.py create \
+  --name my-voice \
+  --file templates/profiles/example-personal-clone.json
+# edit profiles/my-voice.json -> set voice_sample_path to your 30-60s recording
+python scripts/mimo_tts_batch.py \
+  --config templates/config.example.json \
+  --segments output/segments.json \
+  --profile my-voice
+```
+
+### Security
+
+- API keys are injected via environment variables only; `.env` and all key files are gitignored.
+- Personal voice profiles (`profiles/`), internal docs (`references/`), and generated output (`output/`, `work/`) are kept out of version control.
+
+See the Chinese section below for the full directory structure, pipeline examples, and testing instructions.
 
 ---
 
 <a id="中文"></a>
 ## 中文
 
-# MiMo Lecture Audio Skill v1.3.0
+**mimo-audio-skill** 是通用 MiMo TTS 口播/有声内容合成技能：把任意文本合成为中文语音，覆盖课程讲义、小说有声书、播客、短视频口播、营销文案等场景。支持预置音色、voicedesign 音色设计、voiceclone 音色克隆，以及可复用的个性化音色风格模板（profile）。
 
-把讲义、文稿或课程脚本转成 MiMo 语音播报音频。v1.3.0 采用模块化设计：TTS 是核心能力，HTML 播放页、SRT/VTT 字幕、ASR 质检、音频合并、时长统计和 ZIP 打包都是可选能力。
+### 特性
 
-## 目录结构
+- 三种 TTS 路线：预置音色（`mimo-v2.5-tts`）、文字设计音色（`mimo-v2.5-tts-voicedesign`）、样本克隆音色（`mimo-v2.5-tts-voiceclone`）。
+- 音色风格模板：把"模型 + 音色 + 语气风格"打包成一个 JSON，`--profile` 一键复用。
+- 通用文本处理：`.md/.txt/.html/.docx` 自动清理并分段，支持 `--text-kind` 场景快捷选择（lecture / novel / podcast / marketing）。
+- 可选增强：ASR 质检、SRT/VTT 字幕、HTML 播放页、音频合并、时长统计、ZIP 打包。
+- 官方文档自检：合成前对照 MiMo 官方文档与 `/v1/models` 校验模型是否可用。
+- Skills 规范合规：SKILL.md 使用标准 frontmatter（name/description），支持 Agent 隐式匹配调用。
+
+### 目录结构
 
 ```text
-mimo-lecture-audio-skill/
-├── SKILL.md
+mimo-audio-skill/
+├── SKILL.md              # 技能入口（frontmatter + 指令）
 ├── README.md
 ├── CHANGELOG.md
+├── LICENSE
 ├── pyproject.toml
-├── docs/
-│   ├── tts.md
-│   ├── asr.md
-│   ├── subtitles.md
-│   ├── html_player.md
-│   ├── pipeline.md
-│   ├── mimo_v25_audio_rules.md
-│   └── troubleshooting.md
-├── scripts/
-│   ├── clean_lecture_text.py
-│   ├── make_segments.py
-│   ├── validate_segments.py
-│   ├── mimo_tts_batch.py
-│   ├── mimo_asr_transcribe.py
-│   ├── generate_srt.py
-│   ├── generate_html_player.py
-│   ├── inject_audio_to_html.py
-│   ├── merge_wav.py
-│   ├── audio_duration.py
-│   ├── mimo_smoke_test.py
-│   └── run_pipeline.py
-├── templates/
-├── examples/
-└── tests/
+├── requirements.txt
+├── scripts/              # 可执行脚本（TTS / ASR / 字幕 / 模板管理 / 调度器）
+├── templates/            # 配置文件与内置音色模板（templates/profiles/）
+├── examples/             # 示例输入（课程 / 小说 / 播客）
+└── tests/                # 标准库 unittest 测试
 ```
 
-## 0. 配置 Key
+以下目录仅保留在本地，不纳入版本控制：`profiles/`（个人音色模板）、`references/`（内部文档）、`output/`（生成产物）、`work/`（中间状态）。
+
+### 环境要求
+
+- Python 3.9+
+- MiMo API Key（`MIMO_API_KEY`），可选 `MIMO_BASE_URL`（默认 `https://api.xiaomimimo.com/v1`）
+- 可选：`python-docx`（读取 .docx 输入）
+
+### 快速开始
+
+#### 1. 配置 API Key
+
+通过环境变量注入，不要写进任何文件（`.env` 已被 gitignore）：
 
 ```bash
 export MIMO_API_KEY="你的_sk_key"
-export MIMO_BASE_URL="https://api.xiaomimimo.com/v1"
 ```
 
-Windows PowerShell：
+PowerShell：
 
 ```powershell
 $env:MIMO_API_KEY="你的_sk_key"
-$env:MIMO_BASE_URL="https://api.xiaomimimo.com/v1"
 ```
 
-## 1. 最小 TTS 流程
+#### 2. 查看可用音色模板
 
 ```bash
-python scripts/validate_segments.py --segments examples/segments.sample.json
+python scripts/voice_profiles.py list
+```
 
+#### 3. 最小 TTS 流程
+
+```bash
 python scripts/mimo_tts_batch.py \
   --config templates/config.example.json \
   --segments examples/segments.sample.json \
@@ -95,133 +133,67 @@ python scripts/mimo_tts_batch.py \
   --dry-run
 ```
 
-## 2. 一键 pipeline，但按需开启
+### 场景化使用
 
-默认没有任何功能开关时，pipeline 只执行 TTS：
-
-```bash
-python scripts/run_pipeline.py --input examples/ai_literacy_sample.md
-```
-
-只生成音频：
-
-```bash
-python scripts/run_pipeline.py --input lecture.md --tts
-```
-
-音频 + 时长 + 播放页：
+课程/讲义音频：
 
 ```bash
 python scripts/run_pipeline.py \
   --input lecture.md \
-  --tts \
-  --duration \
-  --html-player \
-  --course-title "AI 通识课音频"
+  --text-kind lecture \
+  --tts --duration --srt --vtt --html-player
 ```
 
-视频旁白场景：
+小说有声书旁白：
 
 ```bash
 python scripts/run_pipeline.py \
-  --input video_script.md \
-  --tts \
-  --duration \
-  --srt \
-  --vtt \
-  --merge
+  --input examples/novel_sample.md \
+  --text-kind novel \
+  --tts --duration --html-player
 ```
 
-完整课程包：
+克隆自己的音色（voiceclone）：
+
+准备 30-60 秒、无背景音乐的 `.wav`/`.mp3` 录音（≤10MB），创建个人音色模板：
 
 ```bash
-python scripts/run_pipeline.py \
-  --input lecture.md \
-  --tts \
-  --asr-check \
-  --duration \
-  --srt \
-  --vtt \
-  --html-player \
-  --merge \
-  --zip
+python scripts/voice_profiles.py create \
+  --name my-voice \
+  --file templates/profiles/example-personal-clone.json
 ```
 
-## 3. 已有 HTML 只注入音频
-
-如果你已经有设计好的讲义 HTML，不要重新生成播放页，直接注入音频块：
+编辑 `profiles/my-voice.json`，把 `voice_sample_path` 指向你的录音，然后合成：
 
 ```bash
-python scripts/inject_audio_to_html.py \
-  --html lecture.html \
-  --manifest output/audio_manifest.json \
-  --output lecture_with_audio.html
-```
-
-## 4. 单脚本能力
-
-统计时长：
-
-```bash
-python scripts/audio_duration.py --manifest output/audio_manifest.json --update-manifest
-```
-
-生成字幕：
-
-```bash
-python scripts/generate_srt.py \
-  --manifest output/audio_manifest.json \
-  --segments output/segments.json \
-  --srt output/subtitles/course.srt \
-  --vtt output/subtitles/course.vtt
-```
-
-生成播放页：
-
-```bash
-python scripts/generate_html_player.py \
-  --manifest output/audio_manifest.json \
-  --segments output/segments.json \
-  --output output/player.html
-```
-
-合并音频：
-
-```bash
-python scripts/merge_wav.py \
-  --manifest output/audio_manifest.json \
-  --output output/full_course.wav
-```
-
-ASR 质检：
-
-```bash
-python scripts/mimo_asr_transcribe.py \
+python scripts/mimo_tts_batch.py \
   --config templates/config.example.json \
-  --audio output/audio/*.wav \
-  --language zh \
-  --out-dir output/asr \
-  --manifest output/asr_manifest.json
+  --segments output/segments.json \
+  --profile my-voice \
+  --out-dir output/audio \
+  --manifest output/audio_manifest.json
 ```
 
-## 5. 测试
+### 音色模板（profile）
+
+- 内置模板：`templates/profiles/`（`lecture-natural` / `podcast-casual` / `novel-narration` / `short-video` / `example-personal-clone`）。
+- 个人模板：`profiles/`（gitignored，不入库）。
+- `--profile` 只填充 segments 缺失字段，不覆盖显式配置；`voice_profiles.py apply --overwrite` 可强制覆盖。
+- `--text-kind` 场景快捷选择：`lecture` / `novel` / `podcast` / `marketing`。
+
+### 测试
 
 ```bash
-python -m py_compile scripts/*.py
+python -m compileall -q scripts
 python -m unittest discover -s tests -v
-python scripts/run_pipeline.py --input examples/ai_literacy_sample.md --tts --duration --html-player --dry-run
 ```
 
-真实 API smoke test：
+### 安全说明
 
-```bash
-python scripts/mimo_smoke_test.py --config templates/config.example.json --out-dir output/smoke
-```
+- API Key 只通过环境变量注入；`.env` 及所有密钥类文件已 gitignore，绝不提交。
+- 个人音色模板（`profiles/`）含本地路径等个人信息，不纳入版本控制。
+- 内部文档（`references/`）与生成产物（`output/`、`work/`）不纳入版本控制，避免内部文档和开发状态泄漏。
 
-## 6. 设计原则
+### License
 
-- `SKILL.md` 只写核心能力和路由规则。
-- `README.md` 写快速开始和常用命令。
-- `docs/` 写详细说明。
-- `scripts/` 每个脚本只负责一类任务。
-- `run_pipeline.py` 只是可选调度器，不替代单脚本。
+MIT

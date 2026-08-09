@@ -1,12 +1,12 @@
 [project]
-name = "mimo-lecture-audio-skill"
-version = "1.3.0"
-description = "Modular MiMo lecture audio workflow skill for TTS, ASR QA, subtitles, HTML review, WAV merge, and packaging."
+name = "mimo-audio-skill"
+version = "2.2.0"
+description = "General-purpose MiMo TTS narration skill: lecture, novel, podcast and short-video audio with reusable voice/style profiles, ASR QA, subtitles, HTML review, WAV merge, and packaging."
 requires-python = ">=3.9"
 readme = "README.md"
 license = { text = "MIT" }
-authors = [{ name = "MiMo Lecture Audio Skill Maintainers" }]
-keywords = ["mimo", "tts", "asr", "lecture", "audio", "skill"]
+authors = [{ name = "MiMo Audio Skill Maintainers" }]
+keywords = ["mimo", "tts", "asr", "narration", "voice-clone", "voice-design", "profile", "audio", "skill"]
 
 [project.optional-dependencies]
 docx = ["python-docx>=1.1.0"]
@@ -15,6 +15,6 @@ dev = ["jsonschema>=4.0.0"]
 [tool.setuptools]
 py-modules = []
 
-[tool.mimo_lecture_audio_skill]
+[tool.mimo_audio_skill]
 entrypoint = "SKILL.md"
 script_dir = "scripts"

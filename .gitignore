@@ -1,12 +1,43 @@
+# ===== 密钥与敏感信息：绝不提交 =====
 .env
 .env.*
-__pycache__/
-*.pyc
-output/
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+secrets/
 input/private/
+
+# ===== 个人数据与本地路径：不纳入版本控制 =====
+profiles/
+
+# ===== 内部文档与开发状态：不纳入版本控制 =====
+references/
+docs/
+output/
+work/
 *.log
 *.tmp
-.DS_Store
-
 *.jsonl
 *.zip
+.DS_Store
+
+# ===== 开发/构建配置：不上传 =====
+.idea/
+.vscode/
+*.iml
+.vs/
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/

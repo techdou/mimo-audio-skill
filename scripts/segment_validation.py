@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validation helpers for MiMo lecture TTS segments."""
+"""Validation helpers for MiMo TTS narration segments."""
 from __future__ import annotations
 
 import re

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "MiMo Lecture Audio Segments",
-  "description": "Batch input schema for MiMo-V2.5-TTS lecture narration.",
+  "title": "MiMo TTS Narration Segments",
+  "description": "Batch input schema for MiMo-V2.5-TTS narration (lecture, novel, podcast, short-video, etc.).",
   "oneOf": [
     {
       "type": "object",

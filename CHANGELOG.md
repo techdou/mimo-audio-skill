@@ -1,5 +1,51 @@
 # Changelog
 
+## v2.2.0
+
+Skills 格式合规升级：按官方 SKILL.md 规范（name/description frontmatter + 正文指令）重写元数据与正文，优化 Agent 匹配调用。
+
+### Changed
+
+- SKILL.md 改为标准 YAML frontmatter（`name` / `description` / `metadata.short-description`），description 精简为"工作流 + 触发/不触发条件"，正文以 Use/Do not use 开头。
+- 文档目录 `docs/` 更名为规范推荐的 `references/`，SKILL.md、README、references 内部互链同步更新。
+- 正文瘦身：API 细节、自检、排错等移入 references，SKILL.md 只保留路由、模板要点、输出约定。
+
+## v2.1.0
+
+技能更名与样本更新：`mimo-lecture-audio-skill` → `mimo-audio-skill`。
+
+### Changed
+
+- 技能目录、项目名、SKILL/README/LICENSE 中的名称统一改为 `mimo-audio-skill`。
+- `profiles/douge-lecture.json` 的克隆样本更新为 `C:/Users/DouXiulu/Downloads/douge.wav`。
+- 同步更新外部引用：`ai-promo-video`、`remotion-video` 中对旧技能名的文字引用。
+
+## v2.0.0
+
+通用化升级：从"讲义音频 Skill"扩展为"通用口播/有声内容合成 Skill"，新增可复用的音色风格模板系统。
+
+### Added
+
+- 新增 `scripts/voice_profiles.py`：音色模板管理器，支持 `list / get / create / validate / apply`。
+- 新增 `templates/profiles/`：内置模板 lecture-natural、podcast-casual、novel-narration、short-video、example-personal-clone。
+- 新增 `profiles/`：个人模板目录（gitignored），内置 `douge-lecture.json`（豆哥 voiceclone 克隆音色基准）。
+- 新增 `docs/profiles.md`：模板字段、位置、使用方式与设计取舍。
+- 新增 `examples/novel_sample.md`、`examples/podcast_sample.md`：非讲义场景示例。
+- `mimo_tts_batch.py` 新增 `--profile` / `--profile-file`：合成前把模板注入 segments 缺失字段。
+- `make_segments.py` 新增 `--profile` / `--profile-file` / `--voice-sample-path` / `--voice-design-prompt`。
+- `run_pipeline.py` 新增 `--profile` / `--profile-file` / `--text-kind`（lecture/novel/podcast/marketing）和 `--title` 别名。
+
+### Changed
+
+- `SKILL.md` / `README.md` 重写为通用口播/有声内容合成说明，讲义降级为其中一个场景。
+- `make_segments.py` 默认标题前缀改为"内容片段"，`--style` 默认值改为 None（显式传参才覆盖 profile）。
+- 校验脚本和 TTS 批处理文案从"lecture"泛化为"narration"。
+
+### Design
+
+- Profile 只做缺省值注入，不覆盖显式字段，单段特殊处理仍可行。
+- 个人模板与内置模板分离，个人样本路径不随仓库分发。
+
 ## v1.4.0
 
 自更新增强版:新增运行时官方文档同步校验,防止模型下线后 skill 静默失效。

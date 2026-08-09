@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate MiMo lecture TTS segments before synthesis."""
+"""Validate MiMo TTS narration segments before synthesis."""
 from __future__ import annotations
 
 import argparse

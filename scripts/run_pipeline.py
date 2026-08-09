@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Optional orchestrator for MiMo lecture audio workflows.
+"""Optional orchestrator for MiMo narration audio workflows.
 
 The pipeline is intentionally opt-in and modular. It does not replace the
 single-purpose scripts; it simply routes common combinations.
@@ -19,6 +19,13 @@ from mimo_logger import JsonlLogger, setup_logger
 from mimo_audio_common import cleanup_intermediates
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+
+TEXT_KIND_PROFILE = {
+    "lecture": "lecture-natural",
+    "novel": "novel-narration",
+    "podcast": "podcast-casual",
+    "marketing": "short-video",
+}
 
 
 def run_cmd(cmd: List[str], *, dry_run: bool, logger, jsonl: JsonlLogger) -> int:
@@ -44,12 +51,16 @@ def collect_wavs(audio_dir: Path) -> List[str]:
 
 
 def main(argv: Optional[Iterable[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description="Run an optional modular MiMo lecture audio pipeline")
-    parser.add_argument("--input", help="Lecture source file (.md/.txt/.html/.docx) used when --segments is not provided")
+    parser = argparse.ArgumentParser(description="Run an optional modular MiMo narration audio pipeline")
+    parser.add_argument("--input", help="Source file (.md/.txt/.html/.docx): lecture notes, novel excerpt, podcast script, marketing copy — used when --segments is not provided")
     parser.add_argument("--segments", help="Existing segments JSON; skips clean/make segmentation")
     parser.add_argument("--config", default="templates/config.example.json", help="Config JSON")
     parser.add_argument("--out-dir", default="output/course_audio", help="Pipeline output root")
-    parser.add_argument("--course-title", default="MiMo 讲义音频")
+    parser.add_argument("--course-title", default="MiMo 合成音频", help="Title for the HTML review player (alias: --title)")
+    parser.add_argument("--title", dest="course_title", help="Alias for --course-title")
+    parser.add_argument("--profile", help="Voice/style profile name (personal or built-in)")
+    parser.add_argument("--profile-file", help="Voice/style profile JSON file path")
+    parser.add_argument("--text-kind", default="auto", choices=["auto", "lecture", "novel", "podcast", "marketing"], help="Content scenario; auto-selects a built-in profile when --profile is not given")
 
     # Optional workflow switches. If no switch is provided, default to --tts only.
     parser.add_argument("--tts", action="store_true", help="Generate MiMo TTS audio")
@@ -95,6 +106,17 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
         args.tts = True
         logger.info("No action flag provided; defaulting to --tts only.")
 
+    profile_args: List[str] = []
+    if args.profile:
+        profile_args += ["--profile", args.profile]
+    elif args.profile_file:
+        profile_args += ["--profile-file", args.profile_file]
+    elif args.text_kind != "auto":
+        kind_profile = TEXT_KIND_PROFILE.get(args.text_kind)
+        if kind_profile:
+            profile_args += ["--profile", kind_profile]
+            logger.info(f"Text kind '{args.text_kind}' maps to built-in profile '{kind_profile}'.")
+
     if not args.segments:
         if not args.input:
             logger.error("Provide --segments, or provide --input so the pipeline can clean and segment it.")
@@ -102,7 +124,9 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
         rc = run_cmd([sys.executable, str(SCRIPT_DIR / "clean_lecture_text.py"), "--input", args.input, "--output", str(cleaned_path)], dry_run=args.dry_run, logger=logger, jsonl=jsonl)
         if rc:
             return rc
-        rc = run_cmd([sys.executable, str(SCRIPT_DIR / "make_segments.py"), "--input", str(cleaned_path), "--output", str(segments_path)], dry_run=args.dry_run, logger=logger, jsonl=jsonl)
+        make_cmd = [sys.executable, str(SCRIPT_DIR / "make_segments.py"), "--input", str(cleaned_path), "--output", str(segments_path)]
+        make_cmd += profile_args
+        rc = run_cmd(make_cmd, dry_run=args.dry_run, logger=logger, jsonl=jsonl)
         if rc:
             return rc
 
@@ -131,6 +155,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
 
     if args.tts:
         cmd = [sys.executable, str(SCRIPT_DIR / "mimo_tts_batch.py"), "--config", args.config, "--segments", str(segments_path), "--out-dir", str(audio_dir), "--manifest", str(tts_manifest), "--include-text-in-manifest"]
+        cmd += profile_args
         if args.stream:
             cmd.append("--stream")
         if args.stream_all:

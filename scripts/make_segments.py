@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Create rough MiMo TTS segment JSON from cleaned text.
+"""Create rough MiMo TTS segment JSON from cleaned narration text.
 
 This is a helper, not a replacement for agent-based narration rewriting.
 It preserves text as much as possible and splits by headings/paragraphs.
+Works for lecture notes, novel excerpts, podcast scripts, marketing copy —
+any text that should become spoken audio.
 """
 
 from __future__ import annotations
@@ -17,6 +19,7 @@ DEFAULT_STYLE = (
     "用温柔、清晰、适合课程讲解的语气朗读，语速中等偏慢，声音自然亲切。"
     "遇到重要概念时适当停顿，遇到步骤、定义、对比和案例时保持清楚的节奏感。"
 )
+DEFAULT_TITLE_PREFIX = "内容片段"
 
 SENTENCE_SPLIT_RE = re.compile(r"(?<=[。！？!?；;])")
 
@@ -80,14 +83,18 @@ def infer_title(chunk: str, index: int, title_prefix: str) -> str:
 
 
 def parse_args(argv: Optional[Iterable[str]] = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Make rough MiMo TTS segments from cleaned lecture text")
+    parser = argparse.ArgumentParser(description="Make rough MiMo TTS segments from cleaned narration text")
     parser.add_argument("--input", required=True, help="Input cleaned text file")
     parser.add_argument("--output", required=True, help="Output segments JSON")
-    parser.add_argument("--title-prefix", default="课程片段", help="Fallback title prefix")
+    parser.add_argument("--title-prefix", default=DEFAULT_TITLE_PREFIX, help="Fallback title prefix")
     parser.add_argument("--max-chars", type=int, default=650, help="Approximate max Chinese characters per segment")
-    parser.add_argument("--style", default=DEFAULT_STYLE, help="Style instruction for all segments")
-    parser.add_argument("--model", default="mimo-v2.5-tts", help="Default model")
-    parser.add_argument("--voice", default="冰糖", help="Default voice")
+    parser.add_argument("--style", default=None, help="Style instruction for all segments (overrides profile)")
+    parser.add_argument("--model", help="Default model (profile wins over CLI when both absent)")
+    parser.add_argument("--voice", help="Default preset voice")
+    parser.add_argument("--voice-sample-path", help="Voice sample path for voiceclone")
+    parser.add_argument("--voice-design-prompt", help="Voice design prompt for voicedesign")
+    parser.add_argument("--profile", help="Voice/style profile name (personal or built-in)")
+    parser.add_argument("--profile-file", help="Voice/style profile JSON file path")
     parser.add_argument("--format", default="wav", help="Default audio format")
     return parser.parse_args(argv)
 
@@ -99,22 +106,39 @@ def main() -> None:
     text = input_path.read_text(encoding="utf-8", errors="replace")
     chunks = make_chunks(text, max_chars=args.max_chars)
 
+    profile: Optional[dict] = None
+    if args.profile or args.profile_file:
+        from voice_profiles import find_profile
+        profile = find_profile(args.profile, args.profile_file)
+
+    default_model = args.model or (profile or {}).get("model") or "mimo-v2.5-tts"
+    default_voice = args.voice or (profile or {}).get("voice") or "冰糖"
+    default_style = args.style or (profile or {}).get("style_instruction") or DEFAULT_STYLE
+    default_voice_sample = args.voice_sample_path or (profile or {}).get("voice_sample_path") or ""
+    default_voice_design = args.voice_design_prompt or (profile or {}).get("voice_design_prompt") or ""
+
     segments = []
     for i, chunk in enumerate(chunks, start=1):
         title = infer_title(chunk, i, args.title_prefix)
         slug = slugify(title, f"segment_{i:02d}")
-        segments.append(
-            {
-                "index": i,
-                "title": title,
-                "filename": f"{i:02d}_{slug}.{args.format}",
-                "model": args.model,
-                "voice": args.voice,
-                "format": args.format,
-                "style_instruction": args.style,
-                "speech_text": chunk,
-            }
-        )
+        segment = {
+            "index": i,
+            "title": title,
+            "filename": f"{i:02d}_{slug}.{args.format}",
+            "model": default_model,
+            "format": args.format,
+            "style_instruction": default_style,
+            "speech_text": chunk,
+        }
+        if default_model == "mimo-v2.5-tts-voiceclone":
+            if default_voice_sample:
+                segment["voice_sample_path"] = default_voice_sample
+        elif default_model == "mimo-v2.5-tts-voicedesign":
+            if default_voice_design:
+                segment["voice_design_prompt"] = default_voice_design
+        else:
+            segment["voice"] = default_voice
+        segments.append(segment)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as f:
