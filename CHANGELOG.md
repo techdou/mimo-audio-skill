@@ -1,5 +1,22 @@
 # Changelog
 
+## v2.4.0
+
+TTS 后交互式问询规则 + .gitignore 加固。
+
+### Added
+
+- SKILL.md 新增 **Post-TTS ask rule**：每次 TTS 合成完成后，agent 自动用 AskUserQuestion 问用户要不要做后处理（合并长音频 / HTML 播放页 / 测时长 / SRT 字幕），用户选完直接调对应脚本。
+- SKILL.md 的 Default commands 补充 `merge_wav.py` 快速合并命令示例。
+- Progressive disclosure rule 末尾补充"TTS 后必须执行 Post-TTS 问询"指引。
+
+### Changed
+
+- SKILL.md frontmatter version 升至 2.4.0。
+- pyproject.toml version 升至 2.4.0。
+- `.gitignore` 补充 `scripts/output/`、`AGENTS.override.md`、`CLAUDE.md`、`.claude/` 规则，防止开发配置和 agent 内部策略泄漏。
+- README.md 补充目录结构说明、Post-TTS 交互规则介绍。
+
 ## v2.3.1
 
 README 回归用户视角：删除内部目录结构与仓库卫生说明，只保留功能、使用方法和安全要点。

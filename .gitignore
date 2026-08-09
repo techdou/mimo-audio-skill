@@ -15,12 +15,18 @@ profiles/
 # ===== 内部开发文档（docs，如 PRD/PDD）与开发状态：不纳入版本控制 =====
 docs/
 output/
+scripts/output/
 work/
 *.log
 *.tmp
 *.jsonl
 *.zip
 .DS_Store
+
+# ===== Agent 内部覆盖配置（含本地路径/策略，不入库） =====
+AGENTS.override.md
+CLAUDE.md
+.claude/
 
 # ===== 开发/构建配置：不上传 =====
 .idea/

@@ -14,8 +14,40 @@
 - Three TTS routes: preset voice (`mimo-v2.5-tts`), text-described voice design (`mimo-v2.5-tts-voicedesign`), and sample-based voice cloning (`mimo-v2.5-tts-voiceclone`).
 - Voice/style profiles: package model + voice + delivery style into one JSON and reuse it with `--profile`.
 - Generic text intake: auto-clean and segment `.md/.txt/.html/.docx`, with `--text-kind` shortcuts for lecture/novel/podcast/marketing.
+- Post-TTS interactive ask: after synthesis, the agent asks whether to merge segments, generate an HTML player, measure durations, or create subtitles.
 - Optional add-ons: ASR QA, SRT/VTT subtitles, HTML review player, WAV merge, duration stats, ZIP packaging.
 - Official-doc self check before synthesis (models vs `/v1/models`).
+
+### Directory structure
+
+```
+mimo-audio-skill/
+├── SKILL.md                  # Skill entry point (agent reads this)
+├── scripts/                  # All executable scripts
+│   ├── mimo_tts_batch.py     # Core TTS synthesis
+│   ├── run_pipeline.py       # Optional multi-step orchestrator
+│   ├── merge_wav.py          # Merge segment WAVs → one file
+│   ├── generate_html_player.py  # Standalone audio review page
+│   ├── generate_srt.py       # SRT/VTT subtitles
+│   ├── audio_duration.py     # Measure WAV durations
+│   ├── inject_audio_to_html.py  # Inject audio into existing HTML
+│   ├── mimo_asr_transcribe.py   # ASR transcription for QA
+│   ├── voice_profiles.py     # Voice profile manager
+│   ├── check_official_docs.py   # Self-update guard
+│   └── ...                   # Shared libs, validators, utilities
+├── templates/                # Configs, schemas, built-in profiles
+│   ├── config.example.json
+│   ├── segments.example.json
+│   ├── segments.schema.json
+│   ├── known_rules.json
+│   └── profiles/             # Built-in voice profiles
+├── examples/                 # Sample inputs
+├── references/               # Deep-dive docs (loaded on demand)
+├── tests/                    # Unit tests (stdlib unittest)
+└── CHANGELOG.md
+```
+
+Files **not** in version control (see `.gitignore`): `.env` (API keys), `profiles/` (personal voice data), `output/` (generated audio), `docs/` (internal dev docs).
 
 ### Quick start
 
@@ -44,12 +76,23 @@ python scripts/mimo_tts_batch.py \
   --profile my-voice
 ```
 
+### Post-TTS interactive ask
+
+After TTS synthesis completes, the agent automatically asks (via AskUserQuestion) whether to run post-processing steps:
+
+- **Merge** all segments into one long WAV (`full_course.wav`)
+- **HTML player** for browser-based review
+- **Duration** measurement per segment
+- **SRT subtitles** for video/voiceover
+- Skip all — audio files are enough
+
+Select what you need; the agent calls the corresponding scripts immediately.
+
 ### Security
 
 - API keys are injected via environment variables only; `.env` and all key files are gitignored.
 - Personal voice profiles (`profiles/`) are local-only and never committed.
-
-See the Chinese section below for the full directory structure, pipeline examples, and testing instructions.
+- Internal dev docs (`docs/`) and agent config (`.claude/`, `AGENTS.override.md`) are gitignored.
 
 ---
 
@@ -63,9 +106,40 @@ See the Chinese section below for the full directory structure, pipeline example
 - 三种 TTS 路线：预置音色（`mimo-v2.5-tts`）、文字设计音色（`mimo-v2.5-tts-voicedesign`）、样本克隆音色（`mimo-v2.5-tts-voiceclone`）。
 - 音色风格模板：把"模型 + 音色 + 语气风格"打包成一个 JSON，`--profile` 一键复用。
 - 通用文本处理：`.md/.txt/.html/.docx` 自动清理并分段，支持 `--text-kind` 场景快捷选择（lecture / novel / podcast / marketing）。
+- TTS 后交互式问询：合成完成后，agent 自动问你要不要合并长音频、生成播放页、测时长、做字幕。
 - 可选增强：ASR 质检、SRT/VTT 字幕、HTML 播放页、音频合并、时长统计、ZIP 打包。
 - 官方文档自检：合成前对照 MiMo 官方文档与 `/v1/models` 校验模型是否可用。
-- Skills 规范合规：SKILL.md 使用标准 frontmatter（name/description），支持 Agent 隐式匹配调用。
+
+### 目录结构
+
+```
+mimo-audio-skill/
+├── SKILL.md                  # 技能入口（agent 读取此文件）
+├── scripts/                  # 所有可执行脚本
+│   ├── mimo_tts_batch.py     # 核心 TTS 合成
+│   ├── run_pipeline.py       # 可选多步骤编排器
+│   ├── merge_wav.py          # 合并分段 WAV → 一个文件
+│   ├── generate_html_player.py  # 独立音频播放页
+│   ├── generate_srt.py       # SRT/VTT 字幕
+│   ├── audio_duration.py     # 测量 WAV 时长
+│   ├── inject_audio_to_html.py  # 往已有 HTML 注入音频
+│   ├── mimo_asr_transcribe.py   # ASR 转写质检
+│   ├── voice_profiles.py     # 音色模板管理
+│   ├── check_official_docs.py   # 自更新校验
+│   └── ...                   # 共享库、校验器、工具
+├── templates/                # 配置、schema、内置模板
+│   ├── config.example.json
+│   ├── segments.example.json
+│   ├── segments.schema.json
+│   ├── known_rules.json
+│   └── profiles/             # 内置音色模板
+├── examples/                 # 示例输入
+├── references/               # 深度文档（按需加载）
+├── tests/                    # 单元测试（标准库 unittest）
+└── CHANGELOG.md
+```
+
+**不纳入版本控制**（见 `.gitignore`）：`.env`（API 密钥）、`profiles/`（个人音色数据）、`output/`（生成的音频）、`docs/`（内部开发文档）、`.claude/`/`AGENTS.override.md`（agent 内部配置）。
 
 ### 环境要求
 
@@ -156,6 +230,18 @@ python scripts/mimo_tts_batch.py \
   --manifest output/audio_manifest.json
 ```
 
+### TTS 后交互式问询
+
+TTS 合成完成后，agent 会自动用 AskUserQuestion 问你想要哪些后处理：
+
+- **合并**：把所有分段合成一个长音频（`full_course.wav`），段间自动加 350ms 静音过渡
+- **HTML 播放页**：生成浏览器可直接打开的播放页，带逐段播放控件和时长显示
+- **测时长**：测量每段 WAV 的精确时长，回写进 manifest
+- **SRT 字幕**：生成视频/配音用的字幕文件
+- 都不用：跳过后处理，音频文件够用
+
+你选完，agent 直接调对应脚本执行，不再追问。
+
 ### 音色模板（profile）
 
 - 内置模板：`templates/profiles/`（`lecture-natural` / `podcast-casual` / `novel-narration` / `short-video` / `example-personal-clone`）。
@@ -174,6 +260,7 @@ python -m unittest discover -s tests -v
 
 - API Key 只通过环境变量注入；`.env` 及所有密钥类文件已 gitignore，绝不提交。
 - 个人音色模板（`profiles/`）含本地路径等个人信息，不纳入版本控制。
+- 内部开发文档（`docs/`）和 agent 配置（`.claude/`、`AGENTS.override.md`）不纳入版本控制。
 
 ### License
 

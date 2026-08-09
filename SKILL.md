@@ -1,6 +1,6 @@
 ---
 name: mimo-lecture-audio-skill
-version: 1.4.0
+version: 2.4.0
 description: Generate MiMo-powered lecture narration audio from teaching notes, with optional ASR QA, subtitles, HTML review pages, WAV merge, duration stats, packaging, and runtime official-doc sync checking. Use progressive disclosure: route to the smallest script needed for the user's task.
 ---
 
@@ -21,6 +21,8 @@ Do not run the full pipeline by default. Choose the smallest script that satisfi
 - Measure audio durations: use `scripts/audio_duration.py`.
 - Check whether local rules match official MiMo docs and `/v1/models`: use `scripts/check_official_docs.py`.
 - Run a common multi-step workflow: use `scripts/run_pipeline.py` with explicit flags.
+
+After TTS synthesis completes, always execute the Post-TTS ask rule (see below), even if the user only asked for "generate audio".
 
 ## Core workflow
 
@@ -78,6 +80,31 @@ python scripts/run_pipeline.py \
   --duration \
   --html-player
 ```
+
+Merge existing segment WAVs into one long audio:
+
+```bash
+python scripts/merge_wav.py \
+  --manifest output/audio_manifest.json \
+  --output output/full_course.wav
+```
+
+## Post-TTS ask rule
+
+After TTS synthesis completes (`mimo_tts_batch.py` or `run_pipeline.py --tts`), the agent **must** use AskUserQuestion to ask the user which post-processing steps they want. This is a **multiSelect** question with these options:
+
+| Option label | What it does | Script to call if selected |
+|---|---|---|
+| 合并成一个长音频 | Merge all segments into one WAV | `merge_wav.py --manifest <manifest> --output <out_dir>/full_course.wav` |
+| 生成 HTML 播放页 | Standaway review page with audio players | `generate_html_player.py --manifest <manifest> --output <out_dir>/player.html --title <title>` |
+| 测各段时长 | Measure each segment's duration | `audio_duration.py --manifest <manifest> --update-manifest` |
+| 生成 SRT 字幕 | Subtitles for video/voiceover | `generate_srt.py --manifest <manifest> --segments <segments> --srt <out_dir>/subtitles.srt` |
+| 都不用，音频够用了 | Skip all post-processing | Call nothing |
+
+Rules:
+- If the user selects multiple items, execute in dependency order: **duration → merge → srt → html-player** (duration enriches the manifest so srt/html-player can show timings).
+- After the user picks, call the scripts immediately via Bash. Do not ask again.
+- If running via `run_pipeline.py` with flags like `--merge --html-player` already set, skip the ask (user already chose).
 
 ## Optional pipeline flags
 
