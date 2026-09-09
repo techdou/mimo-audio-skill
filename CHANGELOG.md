@@ -1,5 +1,18 @@
 # Changelog
 
+## v2.4.2
+
+Profile 机制增强与个人配置维护。
+
+### Added
+
+- Profile 新增可选字段 `chars_per_minute`（实测语速，字/分钟）：用于稿件时长估算，克隆音色建议首次合成后实测回填；字段说明已写入 `references/profiles.md`，内置示例模板 `example-personal-clone.json` 加占位。各用户的克隆音色语速普遍偏离 250 字/分钟默认值，回填后 agent 可直接从 profile 读取校准值。
+
+### Changed
+
+- 修正 `references/profiles.md` 个人克隆章节表述：个人模板仅存于本机 `profiles/`、不随仓库分发，避免其他用户按文档寻找不存在的内置个人模板。
+- （本地维护，不随仓库分发）作者个人模板样本由 Downloads 迁入 `profiles/douge.wav` 并回填实测语速 310 字/分钟。
+
 ## v2.4.1
 
 修复文档路由与技能元数据遗留问题，补齐 Profile 主能力入口。

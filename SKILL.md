@@ -1,6 +1,6 @@
 ---
 name: mimo-audio-skill
-version: 2.4.1
+version: 2.4.2
 description: Generate MiMo-powered narration audio (lecture, novel, podcast, short-video) from text or segmented notes, with reusable voice profiles, optional ASR QA, subtitles, HTML review pages, WAV merge, duration stats, packaging, and runtime official-doc sync checking. Use progressive disclosure: route to the smallest script needed for the user's task.
 ---
 

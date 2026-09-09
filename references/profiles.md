@@ -25,6 +25,7 @@ v2.0.0 新增。Profile 把"模型 + 音色 + 语气风格 + 音频标签"打包
 | `style_instruction` | 推荐 | 语气/风格指令，放进 `user.content` |
 | `speech_prefix_tags` | 否 | 附加到 `assistant.content` 开头的风格标签，如 `["轻松","活泼"]` |
 | `use_cases` | 否 | 适用场景标签 |
+| `chars_per_minute` | 否 | 实测语速（字/分钟），用于稿件时长估算。克隆音色建议首次合成后实测回填（默认口播 250，个人音色常偏离） |
 
 ## 内置模板
 
@@ -53,7 +54,7 @@ python scripts/voice_profiles.py create \
 python scripts/voice_profiles.py validate my-voice
 ```
 
-技能已内置一个豆哥模板 `douge-lecture`（基于 2026-08-09 录音样本）。想派生变体（例如"豆哥·轻松版""豆哥·故事版"），复制该文件改 `name`、`label`、`style_instruction` 即可。
+个人模板只存在于本机 `profiles/` 目录、不随仓库分发（作者自己的 `douge-lecture` 也是如此）。想派生变体，复制自己的个人模板改 `name`、`label`、`style_instruction` 即可。
 
 ## 使用方式
 
