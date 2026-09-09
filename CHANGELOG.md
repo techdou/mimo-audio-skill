@@ -1,5 +1,25 @@
 # Changelog
 
+## v2.4.1
+
+修复文档路由与技能元数据遗留问题，补齐 Profile 主能力入口。
+
+### Fixed
+
+- SKILL.md 中 9 处 `docs/*.md` 引用改为 `references/*.md`（Self-update guard 与 Details 段）。v2.2.0 将文档目录 `docs/` 更名为 `references/` 时声称"互链同步更新"，但 SKILL.md 这两处漏改，导致按渐进披露规则深入查 TTS 规则/排错文档时路由扑空。
+- SKILL.md frontmatter `name` 从遗留的 `mimo-lecture-audio-skill` 改为 `mimo-audio-skill`，与目录名、pyproject 一致（v2.1.0 更名未收尾）。
+- Details 段补上此前遗漏的 `references/profiles.md`。
+
+### Added
+
+- Progressive disclosure 与 Default commands 补齐 Profile 主能力路由：`voice_profiles.py list/get/create/validate/apply`、`make_segments.py --profile`。此前 v2.0 的核心卖点只在 README/references 出现，agent 只读 SKILL.md 时会漏掉音色模板。
+
+### Changed
+
+- Post-TTS ask rule 的提问工具名改为可移植写法：MiMo Desktop 用 `question`（`multiple: true`），Claude Code 用 AskUserQuestion；README 中英两处同步。
+- 清理开发残留：删除未跟踪的 `_v5_only.json` 与 `output/` mock 数据。
+- SKILL.md frontmatter version 与 pyproject.toml version 升至 2.4.1。
+
 ## v2.4.0
 
 TTS 后交互式问询规则 + .gitignore 加固。

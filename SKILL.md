@@ -1,18 +1,21 @@
 ---
-name: mimo-lecture-audio-skill
-version: 2.4.0
-description: Generate MiMo-powered lecture narration audio from teaching notes, with optional ASR QA, subtitles, HTML review pages, WAV merge, duration stats, packaging, and runtime official-doc sync checking. Use progressive disclosure: route to the smallest script needed for the user's task.
+name: mimo-audio-skill
+version: 2.4.1
+description: Generate MiMo-powered narration audio (lecture, novel, podcast, short-video) from text or segmented notes, with reusable voice profiles, optional ASR QA, subtitles, HTML review pages, WAV merge, duration stats, packaging, and runtime official-doc sync checking. Use progressive disclosure: route to the smallest script needed for the user's task.
 ---
 
-# MiMo Lecture Audio Skill
+# MiMo Audio Skill
 
-Use this Skill when the user wants to turn lecture notes, scripts, Markdown, HTML, or segmented narration text into MiMo audio. The core capability is MiMo TTS. ASR, subtitles, HTML player, audio merge, duration stats, and ZIP packaging are optional add-ons.
+Use this Skill when the user wants to turn lecture notes, novel excerpts, podcast scripts, marketing copy, Markdown, HTML, or segmented narration text into MiMo audio. The core capability is MiMo TTS. Voice profiles, ASR, subtitles, HTML player, audio merge, duration stats, and ZIP packaging are optional add-ons.
 
 ## Progressive disclosure rule
 
 Do not run the full pipeline by default. Choose the smallest script that satisfies the user's request.
 
-- Only generate narration audio: use `scripts/mimo_tts_batch.py`.
+- List or inspect voice/style profiles: use `scripts/voice_profiles.py list|get`.
+- Create/validate/apply a profile: use `scripts/voice_profiles.py create|validate|apply`.
+- Clean source text and build segments (optionally with a profile): use `scripts/make_segments.py`.
+- Only generate narration audio: use `scripts/mimo_tts_batch.py` (add `--profile` when the user named a voice template).
 - Transcribe generated audio for checking: use `scripts/mimo_asr_transcribe.py`.
 - Generate subtitles for video/voiceover: use `scripts/generate_srt.py`.
 - Generate a standalone review page: use `scripts/generate_html_player.py`.
@@ -26,8 +29,8 @@ After TTS synthesis completes, always execute the Post-TTS ask rule (see below),
 
 ## Core workflow
 
-1. Clean source notes if needed.
-2. Create or receive `segments.json`.
+1. Clean source notes if needed (`make_segments.py` or `run_pipeline.py --input`).
+2. Create or receive `segments.json`; apply a voice profile when relevant.
 3. Validate segments.
 4. Run TTS.
 5. Optionally run ASR, duration stats, subtitles, HTML player, merge, or ZIP.
@@ -50,9 +53,24 @@ This skill checks itself against official MiMo docs before synthesis. Two comple
 - **API layer**: `GET /v1/models` — verifies the 4 models this skill uses are still listed. Catches deprecations (the V2 series was retired 2026.6.30).
 - **Doc layer**: fetches `llms.txt` → `.md` sources and diffs preset voices / languages / formats against `templates/known_rules.json`.
 
-Behavior: default non-blocking (read cache → warn → continue). Use `--check-docs` to make it blocking. Use `--skip-check` to bypass. See `docs/self_update.md` for details.
+Behavior: default non-blocking (read cache → warn → continue). Use `--check-docs` to make it blocking. Use `--skip-check` to bypass. See `references/self_update.md` for details.
 
 ## Default commands
+
+List available voice profiles:
+
+```bash
+python scripts/voice_profiles.py list
+```
+
+Build segments from source text with a profile:
+
+```bash
+python scripts/make_segments.py \
+  --input lecture.md \
+  --output output/segments.json \
+  --profile lecture-natural
+```
 
 Validate segments:
 
@@ -60,12 +78,13 @@ Validate segments:
 python scripts/validate_segments.py --segments output/segments.json
 ```
 
-Generate TTS audio:
+Generate TTS audio (with a profile):
 
 ```bash
 python scripts/mimo_tts_batch.py \
   --config templates/config.example.json \
   --segments output/segments.json \
+  --profile lecture-natural \
   --out-dir output/audio \
   --manifest output/audio_manifest.json \
   --include-text-in-manifest
@@ -76,6 +95,7 @@ Run optional pipeline with explicit switches:
 ```bash
 python scripts/run_pipeline.py \
   --input lecture.md \
+  --text-kind lecture \
   --tts \
   --duration \
   --html-player
@@ -91,12 +111,15 @@ python scripts/merge_wav.py \
 
 ## Post-TTS ask rule
 
-After TTS synthesis completes (`mimo_tts_batch.py` or `run_pipeline.py --tts`), the agent **must** use AskUserQuestion to ask the user which post-processing steps they want. This is a **multiSelect** question with these options:
+After TTS synthesis completes (`mimo_tts_batch.py` or `run_pipeline.py --tts`), the agent **must** ask the user which post-processing steps they want, using a multi-select question tool:
+
+- MiMo Desktop: the `question` tool with `multiple: true`.
+- Claude Code: AskUserQuestion (multiSelect).
 
 | Option label | What it does | Script to call if selected |
 |---|---|---|
 | 合并成一个长音频 | Merge all segments into one WAV | `merge_wav.py --manifest <manifest> --output <out_dir>/full_course.wav` |
-| 生成 HTML 播放页 | Standaway review page with audio players | `generate_html_player.py --manifest <manifest> --output <out_dir>/player.html --title <title>` |
+| 生成 HTML 播放页 | Standalone review page with audio players | `generate_html_player.py --manifest <manifest> --output <out_dir>/player.html --title <title>` |
 | 测各段时长 | Measure each segment's duration | `audio_duration.py --manifest <manifest> --update-manifest` |
 | 生成 SRT 字幕 | Subtitles for video/voiceover | `generate_srt.py --manifest <manifest> --segments <segments> --srt <out_dir>/subtitles.srt` |
 | 都不用，音频够用了 | Skip all post-processing | Call nothing |
@@ -109,6 +132,8 @@ Rules:
 ## Optional pipeline flags
 
 - `--tts`: generate MiMo TTS audio.
+- `--profile` / `--profile-file`: inject a voice/style profile into missing segment fields.
+- `--text-kind`: auto-select a built-in profile (`lecture` / `novel` / `podcast` / `marketing`).
 - `--asr-check`: transcribe generated audio for QA.
 - `--srt`: generate SRT subtitles.
 - `--vtt`: generate WebVTT subtitles.
@@ -138,11 +163,12 @@ When enabled, the pipeline deletes only the items above. It preserves all final 
 
 Load deeper docs only when needed:
 
-- `docs/tts.md`
-- `docs/asr.md`
-- `docs/subtitles.md`
-- `docs/html_player.md`
-- `docs/pipeline.md`
-- `docs/mimo_v25_audio_rules.md`
-- `docs/self_update.md`
-- `docs/troubleshooting.md`
+- `references/tts.md`
+- `references/profiles.md`
+- `references/asr.md`
+- `references/subtitles.md`
+- `references/html_player.md`
+- `references/pipeline.md`
+- `references/mimo_v25_audio_rules.md`
+- `references/self_update.md`
+- `references/troubleshooting.md`

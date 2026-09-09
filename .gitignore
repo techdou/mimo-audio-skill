@@ -46,3 +46,6 @@ htmlcov/
 dist/
 build/
 *.egg-info/
+
+# 上游官方文档本地拷贝 (内部参考, 不入库)
+tts_doc.md

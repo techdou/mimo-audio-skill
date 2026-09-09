@@ -78,7 +78,7 @@ python scripts/mimo_tts_batch.py \
 
 ### Post-TTS interactive ask
 
-After TTS synthesis completes, the agent automatically asks (via AskUserQuestion) whether to run post-processing steps:
+After TTS synthesis completes, the agent automatically asks (via a multi-select question tool) whether to run post-processing steps:
 
 - **Merge** all segments into one long WAV (`full_course.wav`)
 - **HTML player** for browser-based review
@@ -232,7 +232,7 @@ python scripts/mimo_tts_batch.py \
 
 ### TTS 后交互式问询
 
-TTS 合成完成后，agent 会自动用 AskUserQuestion 问你想要哪些后处理：
+TTS 合成完成后，agent 会自动用 multiSelect 提问工具问你想要哪些后处理：
 
 - **合并**：把所有分段合成一个长音频（`full_course.wav`），段间自动加 350ms 静音过渡
 - **HTML 播放页**：生成浏览器可直接打开的播放页，带逐段播放控件和时长显示
