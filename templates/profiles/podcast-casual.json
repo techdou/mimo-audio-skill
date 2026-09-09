@@ -1,0 +1,12 @@
+{
+  "name": "podcast-casual",
+  "label": "轻松播客",
+  "description": "像朋友聊天一样轻松自然的播客语气，适合访谈、闲聊型节目和口语化内容。",
+  "model": "mimo-v2.5-tts",
+  "voice": "苏打",
+  "voice_design_prompt": null,
+  "voice_sample_path": null,
+  "style_instruction": "用轻松、口语化、像和朋友聊天的语气，语速自然，带一点随意和亲切感，可以有自然的停顿和语气词，不要播音腔。",
+  "speech_prefix_tags": [],
+  "use_cases": ["播客", "访谈节目", "口语化口播"]
+}

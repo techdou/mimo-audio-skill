@@ -1,0 +1,16 @@
+{
+  "name": "my-voice-lecture",
+  "label": "我的音色·讲课",
+  "description": "个人音色克隆模板示例：复制到技能根目录 profiles/ 下，改成自己的名字和样本路径即可使用。",
+  "model": "mimo-v2.5-tts-voiceclone",
+  "voice": null,
+  "voice_design_prompt": null,
+  "voice_sample_path": "C:/path/to/your_voice_sample.wav",
+  "style_instruction": "用自然、清晰的讲课语气朗读，语速中等，声音亲切，不要播音腔。",
+  "chars_per_minute": null,
+  "speech_prefix_tags": [],
+  "use_cases": [
+    "我的课程口播",
+    "我的视频旁白"
+  ]
+}

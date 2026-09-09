@@ -1,0 +1,12 @@
+{
+  "name": "novel-narration",
+  "label": "小说旁白",
+  "description": "沉稳、有画面感的有声书旁白，适合小说、故事、散文朗读。",
+  "model": "mimo-v2.5-tts-voicedesign",
+  "voice": null,
+  "voice_design_prompt": "沉稳而有磁性的中年男声，音色醇厚，语速中等偏慢，讲述故事时带一点温度和画面感，情绪随情节自然起伏。",
+  "voice_sample_path": null,
+  "style_instruction": "用讲故事的旁白语气朗读，注意节奏和留白，人物对话部分稍微区分语气，不要从头到尾一个调子。",
+  "speech_prefix_tags": [],
+  "use_cases": ["有声书", "小说朗读", "故事旁白"]
+}

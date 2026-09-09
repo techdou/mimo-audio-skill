@@ -1,0 +1,12 @@
+{
+  "name": "short-video",
+  "label": "短视频口播",
+  "description": "节奏明快、有感染力的短视频口播，适合产品介绍、引流课、营销内容。",
+  "model": "mimo-v2.5-tts-voicedesign",
+  "voice": null,
+  "voice_design_prompt": "年轻有活力的女声，音色清亮，语速稍快，表达有热情，适合短视频开场和干货分享。",
+  "voice_sample_path": null,
+  "style_instruction": "用节奏明快、有感染力的口播语气，重点词稍微强调，保持自然不油腻。",
+  "speech_prefix_tags": [],
+  "use_cases": ["短视频口播", "产品介绍", "营销内容"]
+}
